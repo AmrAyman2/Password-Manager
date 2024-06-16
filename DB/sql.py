@@ -88,16 +88,18 @@ def fetch_passwords(conn, website):
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT IV, Password FROM Passwords WHERE Website = %s", (website,))
-        row = cursor.fetchone()
+        rows = cursor.fetchall()
         cursor.close()
-        if row:
+        
+        passwords = []
+        for row in rows:
             iv_from_db, ciphertext_from_db = bytes.fromhex(row[0]), bytes.fromhex(row[1])
-            return iv_from_db, ciphertext_from_db
-        else:
-            return None, None
+            passwords.append((iv_from_db, ciphertext_from_db))
+        
+        return passwords
     except mysql.connector.Error as err:
         print(f"Error: {err}")
-        return None, None
+        return []
 
 def delete_password(conn, website):
     try:

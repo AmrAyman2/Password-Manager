@@ -20,15 +20,17 @@ def store_password():
     print("Password stored successfully.")
 
 def fetch_passwords_and_decrypt():
-    website = input("Enter the website to fetch the password for: ")
+    website = input("Enter the website to fetch passwords for: ")
     conn = get_connection()
-    iv_from_db, ciphertext_from_db = fetch_passwords(conn, website)
+    passwords = fetch_passwords(conn, website)
     conn.close()
-    if iv_from_db and ciphertext_from_db:
-        decrypted_password = decrypt_aes(key, iv_from_db, ciphertext_from_db)
-        print(f"Decrypted password for {website}: {decrypted_password}")
+
+    if passwords:
+        for index, (iv_from_db, ciphertext_from_db) in enumerate(passwords, start=1):
+            decrypted_password = decrypt_aes(key, iv_from_db, ciphertext_from_db)
+            print(f"Password {index}: {decrypted_password}")
     else:
-        print(f"No password found for {website}.")
+        print(f"No passwords found for {website}.")
 
 def delete_password_record():
     website = input("Enter the website to delete the password record for: ")
