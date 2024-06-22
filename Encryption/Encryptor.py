@@ -53,3 +53,12 @@ class Encryptor:
         decryptor = cipher.decryptor()
         decrypted_text = decryptor.update(ciphertext) + decryptor.finalize()
         return decrypted_text.decode()
+
+    def decrypt_and_display_password(self, record_id, password_record):
+        iv_from_db = password_record[2]
+        ciphertext_from_db = password_record[3]
+        iv_bytes = bytes.fromhex(iv_from_db)
+        ciphertext_bytes = bytes.fromhex(ciphertext_from_db)
+        decrypted_password = self.decrypt_aes(iv_bytes, ciphertext_bytes)
+        print(f"Record: ID={record_id}, Username={password_record[1]}, Password (decrypted): {decrypted_password}")
+        return decrypted_password

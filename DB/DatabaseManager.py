@@ -46,6 +46,7 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS Passwords (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 website VARCHAR(255),
+                username VARCHAR(255),
                 password VARCHAR(255),
                 iv VARCHAR(255)
             )
@@ -69,48 +70,75 @@ class DatabaseManager:
             cursor.close()
             conn.close()
             print("Table 'Passwords' deleted successfully.")
+            input("Press any key to exit...")
+            exit(1)
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             exit(1)
 
-    def insert_password(self, website, password, iv):
+    def insert_password(self, website, username, password, iv):
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
-            sql = "INSERT INTO Passwords (website, password, iv) VALUES (%s, %s, %s)"
-            val = (website, password, iv)
+            sql = "INSERT INTO Passwords (website, username, password, iv) VALUES (%s, %s, %s, %s)"
+            val = (website, username, password, iv)
             cursor.execute(sql, val)
             conn.commit()
             cursor.close()
             conn.close()
+            return True
         except mysql.connector.Error as err:
             print(f"Error: {err}")
+            return False
 
     def fetch_passwords(self, website):
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
-            cursor.execute("SELECT iv, password FROM Passwords WHERE website = %s", (website,))
-            rows = cursor.fetchall()
+            sql = "SELECT id, username, iv, password FROM Passwords WHERE website = %s"
+            cursor.execute(sql, (website,))
+            records = cursor.fetchall()
             cursor.close()
             conn.close()
-
-            passwords = []
-            for row in rows:
-                iv_from_db, ciphertext_from_db = bytes.fromhex(row[0]), bytes.fromhex(row[1])
-                passwords.append((iv_from_db, ciphertext_from_db))
-
-            return passwords
+            return records
         except mysql.connector.Error as err:
             print(f"Error: {err}")
             return []
 
-    def delete_password(self, website):
+    def fetch_single_password(self,website,username):
         try:
             conn = self.get_connection()
             cursor = conn.cursor()
-            sql = "DELETE FROM Passwords WHERE website = %s"
-            cursor.execute(sql, (website,))
+            sql = "SELECT id, password, iv FROM Passwords WHERE website = %s AND username = %s"
+            cursor.execute(sql, (website, username))
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+            return result  # Returns (id, ciphertext, iv) if record exists, else None
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return None
+
+    def update_password(self, record_id, ciphertext, iv):
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            sql = "UPDATE Passwords SET password = %s, iv = %s WHERE id = %s"
+            cursor.execute(sql, (ciphertext, iv, record_id))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return True
+        except mysql.connector.Error as err:
+            print(f"Error: {err}")
+            return False
+
+    def delete_password(self, record_id):
+        try:
+            conn = self.get_connection()
+            cursor = conn.cursor()
+            sql = "DELETE FROM Passwords WHERE id = %s"
+            cursor.execute(sql, (record_id,))
             conn.commit()
             cursor.close()
             conn.close()
